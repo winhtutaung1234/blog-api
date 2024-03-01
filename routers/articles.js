@@ -13,6 +13,11 @@ const mongo = new MongoClient(process.env.MONGO_HOST);
 const db = mongo.db("blog");
 const articlesCollection = db.collection("articles");
 
+const { 
+    param,
+    validationResult,
+} = require("express-validator");
+
 router.get("/articles", async (req, res) => {
     try {
         const data = await articlesCollection.find().toArray();
@@ -20,6 +25,29 @@ router.get("/articles", async (req, res) => {
     }catch(e) {
         return res.status(500).json({msg: e.message});
     }
+});
+
+router.get("/articles/:id", 
+[
+    param("id").notEmpty().isMongoId(),
+],
+async (req, res) => {
+    const error = validationResult(req);
+    if(!error.isEmpty()) {
+        return res.status(400).json({
+            error: error.array()
+        });
+    }
+
+    const { id } = req.params;
+    
+    try {
+        const article = await articlesCollection.findOne({_id: new ObjectId(id)});
+        return res.json(article);
+    }catch(e) {
+        return res.status(500).json({msg: e.message});
+    }
+
 });
 
 module.exports = { articlesRouter: router };
