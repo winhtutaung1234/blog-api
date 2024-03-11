@@ -17,10 +17,23 @@ const {
     param,
     validationResult,
 } = require("express-validator");
+const users = require("./users");
 
 router.get("/articles", async (req, res) => {
     try {
-        const data = await articlesCollection.find().toArray();
+        const data = await articlesCollection.aggregate([
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "owner",
+                    foreignField: "_id",
+                    as: "owner",
+                }
+            },
+            { $unwind: "$owner" },
+            { $sort: { _id: -1 }},
+        ]).toArray();
+
         return res.json(data);
     }catch(e) {
         return res.status(500).json({msg: e.message});
