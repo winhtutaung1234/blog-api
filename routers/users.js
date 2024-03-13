@@ -7,7 +7,7 @@ const jwt = require("jsonwebtoken");
 
 const multer = require("multer");
 
-const storage = multer.diskStorage({
+const profileStorage = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, "public/profiles/")
     },
@@ -16,7 +16,17 @@ const storage = multer.diskStorage({
     }
 });
 
-const profileUpload = multer({ storage: storage });
+const coverStorage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, "public/covers/");
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + "_" + file.originalname);
+    }
+})
+
+const profileUpload = multer({ storage: profileStorage });
+const coverUpload = multer({ storage: coverStorage });
 
 const bodyParser = require('body-parser');
 router.use(bodyParser.urlencoded({extended: false}));
@@ -47,6 +57,28 @@ router.post("/users/profile", auth, profileUpload.single("profile"), async (req,
             { 
                 $set: { profile: filename }
             },
+        );
+
+        return res.json(result);
+    }catch(e) {
+        return res.status(500).json({
+            msg: e.message,
+        });
+    }
+});
+
+router.post("/users/cover", auth, coverUpload.single("cover"), async (req, res) => {
+    try {
+        const id = res.locals.user._id;
+        const { filename } = req.file;
+        
+        const result = await usersdb.updateOne(
+            {
+                _id: new ObjectId(id),
+            }, 
+            {
+                $set: { cover: filename },
+            }
         );
 
         return res.json(result);

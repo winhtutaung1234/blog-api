@@ -20,6 +20,9 @@ const {
 } = require("express-validator");
 const { auth } = require("../middlewares/auth");
 
+const multer = require("multer");
+const imageUpload = multer({ dest: "public/images/"});
+
 router.get("/articles", async (req, res) => {
     try {
         const data = await articlesCollection.aggregate([
@@ -97,7 +100,7 @@ async (req, res) => {
 
 });
 
-router.post("/articles", auth,
+router.post("/articles", auth, imageUpload.single("image"),
 [
     body("title").notEmpty(),
     body("body").notEmpty(),
@@ -111,11 +114,17 @@ async (req, res) => {
     }
 
     const { title, body } = req.body;
+    
+    let filename = null;
+    if(req.file) {
+        filename = req.file.filename;
+    }
 
     try {
 
         const user_id = res.locals.user._id;
         const result = await articlesCollection.insertOne({ 
+            image: filename,
             title,
             body,
             owner: new ObjectId(user_id),

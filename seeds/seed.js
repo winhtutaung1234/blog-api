@@ -21,6 +21,7 @@ async function seedUsers() {
         const email = faker.internet.email();
         const password = hash;
         const profile = null;
+        const cover = null;
         const city = faker.location.city();
 
         users.push({
@@ -28,6 +29,7 @@ async function seedUsers() {
             email,
             city,
             profile,
+            cover,
             password,
             created: new Date(),
         });
@@ -49,6 +51,7 @@ async function seedArticles(usersId) {
 
     for(let i = 0; i <= num_of_posts; i++) {
         articles.push({
+            image: null,
             title: faker.lorem.sentence(),
             body: faker.lorem.paragraph(),
             owner: usersId[Math.floor(Math.random() * num_of_users)],
