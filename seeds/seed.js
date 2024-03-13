@@ -3,7 +3,7 @@ require("dotenv").config();
 const { faker, ar } = require("@faker-js/faker");
 const bcrypt = require("bcrypt");
 
-const { MongoClient, ObjectId } = require('mongodb');
+const { MongoClient } = require('mongodb');
 const mongo = new MongoClient(process.env.MONGO_HOST);
 const db = mongo.db("blog");
 
@@ -20,12 +20,14 @@ async function seedUsers() {
         const name = faker.person.fullName();
         const email = faker.internet.email();
         const password = hash;
+        const profile = null;
         const city = faker.location.city();
 
         users.push({
             name,
             email,
             city,
+            profile,
             password,
             created: new Date(),
         });

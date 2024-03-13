@@ -8,6 +8,8 @@ const { articlesRouter } = require("./routers/articles");
 const { usersRouter } = require("./routers/users");
 app.use(cors());
 
+app.use("/static", express.static("./public"));
+
 app.use(articlesRouter);
 app.use(usersRouter);
 

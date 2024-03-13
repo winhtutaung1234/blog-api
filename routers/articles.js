@@ -16,8 +16,9 @@ const articlesCollection = db.collection("articles");
 const { 
     param,
     validationResult,
+    body,
 } = require("express-validator");
-const users = require("./users");
+const { auth } = require("../middlewares/auth");
 
 router.get("/articles", async (req, res) => {
     try {
@@ -37,6 +38,39 @@ router.get("/articles", async (req, res) => {
         return res.json(data);
     }catch(e) {
         return res.status(500).json({msg: e.message});
+    }
+});
+
+router.get("/articles/profile/:id", async (req, res) => {
+    const { id } = req.params;
+    try {
+        const data = await articlesCollection.aggregate([
+            {
+                $match: {
+                    owner: new ObjectId(id),
+                }
+            }, 
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "owner",
+                    foreignField: "_id",
+                    as: "owner"
+                }
+            },
+            {
+                $unwind: "$owner"
+            },
+            { $sort: { _id: -1 }},
+        ])
+        .toArray();
+
+        return res.json(data);
+
+    }catch(e) {
+        return res.status(500).json({
+            msg: e.message,
+        });
     }
 });
 
@@ -61,6 +95,64 @@ async (req, res) => {
         return res.status(500).json({msg: e.message});
     }
 
+});
+
+router.post("/articles", auth,
+[
+    body("title").notEmpty(),
+    body("body").notEmpty(),
+],
+async (req, res) => {
+    const error = validationResult(req);
+    if(!error.isEmpty()) {
+        return res.status(400).json({
+            error: error.array(),
+        });
+    }
+
+    const { title, body } = req.body;
+
+    try {
+
+        const user_id = res.locals.user._id;
+        const result = await articlesCollection.insertOne({ 
+            title,
+            body,
+            owner: new ObjectId(user_id),
+            created: new Date(),
+        });
+
+        const data = await articlesCollection.findOne({ _id: new ObjectId(result.insertedId) });
+        return res.json(data);
+        
+    }catch(e) {
+        res.status(500).json({
+            msg: e.message,
+        });
+    }
+});
+
+router.delete("/articles/:id", 
+[
+    param("id").notEmpty().isMongoId(),
+],
+async (req, res) => {
+    const error = validationResult(req);
+    if(!error.isEmpty()) {
+        return res.status(400).json({
+            error: error.array(),
+        });
+    }
+
+    try {
+        const { id } = req.params;
+        await articlesCollection.deleteOne({ _id: new ObjectId(id) });
+        return res.json(204);
+    }catch(e) {
+        return res.status(500).json({
+            msg: e.message,
+        });
+    }
 });
 
 module.exports = { articlesRouter: router };
