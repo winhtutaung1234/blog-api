@@ -23,6 +23,18 @@ const { auth } = require("../middlewares/auth");
 const multer = require("multer");
 const imageUpload = multer({ dest: "public/images/"});
 
+router.get("/articles/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+        const data = await articlesCollection.findOne({ _id: new ObjectId(id) });
+        return res.json(data);
+    }catch(e) {
+        return res.status(500).json({
+            msg: e.message,
+        });
+    }
+});
+
 router.get("/articles", async (req, res) => {
     try {
         const data = await articlesCollection.aggregate([
@@ -41,6 +53,66 @@ router.get("/articles", async (req, res) => {
         return res.json(data);
     }catch(e) {
         return res.status(500).json({msg: e.message});
+    }
+});
+
+router.put("/articles/like/:id", auth, async (req, res) => {
+    const { id } = req.params;
+    const user_id = res.locals.user._id;
+
+    try {
+        const article = await articlesCollection.findOne({ _id: new ObjectId(id) });
+        
+        if(!article) {
+            return res.status(404).json({ 
+                msg: "article not found",
+            });
+        }
+
+        const likes = [...article.likes, new ObjectId(user_id) ];
+
+        await articlesCollection.updateOne(
+            { _id: new ObjectId(id) },
+            {
+                $set: { likes },
+            }
+        );
+
+        return res.json(likes);
+    }catch(e) {
+        return res.status(500).json({
+            msg: e.message,
+        });
+    }
+});
+
+router.put("/articles/unlike/:id",auth, async (req, res) => {
+    const { id } = req.params;
+    const user_id = res.locals.user._id;
+    try {
+        const article = await articlesCollection.findOne({ _id: new ObjectId(id) });
+
+        if(!article) {
+            return res.status(404).json({
+                msg: 'article not found',
+            });
+        }
+        const likes = article.likes.filter(
+            like => like.toString() !==  user_id.toString()
+        );
+
+        await articlesCollection.updateOne(
+            { _id: new ObjectId(id) },
+            {
+                $set: { likes }
+            }
+        );
+
+        return res.json(likes);
+    }catch(e) {
+        return res.status(500).json({
+            msg: e.message,
+        });
     }
 });
 
@@ -129,6 +201,7 @@ async (req, res) => {
             body,
             owner: new ObjectId(user_id),
             created: new Date(),
+            likes: [],
         });
 
         const data = await articlesCollection.findOne({ _id: new ObjectId(result.insertedId) });

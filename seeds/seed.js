@@ -56,6 +56,7 @@ async function seedArticles(usersId) {
             body: faker.lorem.paragraph(),
             owner: usersId[Math.floor(Math.random() * num_of_users)],
             created: new Date(),
+            likes: [],
         });
     }
 
